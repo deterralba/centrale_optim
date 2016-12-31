@@ -1,4 +1,5 @@
 import numpy as np
+import time
 
 DEFAULT_VALUE = -1
 
@@ -24,43 +25,68 @@ SHAPES_BY_SIZE = [ONE, TWO_CORNER, TWO_STRAIGHT, THREE, FOUR, (0,), (15,)]
 class NoSolutionError(Exception):
     pass
 
-def solve(original_problem, find_all=False, GUI_callback=lambda problem: None):
-    nb_deadends = 0
-    problem = np.zeros(original_problem.shape, dtype=np.int32) + DEFAULT_VALUE
+def solve(original_problem, find_all=False, GUI_callback=lambda problem, valid=False: None):
+    start = time.time()
     pile = []
-    while not is_finished(problem):
-        square = get_next_square(problem)
-        choices = get_possible_choices(original_problem, problem, square)
+    solutions = []
+    solutions.append(
+        find_solution(original_problem, pile, GUI_callback)
+    )
+    if find_all:
+        while pile:
+            try:
+                solutions.append(
+                    find_solution(original_problem, pile, GUI_callback, try_next_solution(pile))
+                )
+            except NoSolutionError:
+                pass
+    print('#'*60, '\n')
+    print('{} solution{} found:\n\n{}'.format(
+        len(solutions),
+        (' was' if len(solutions) == 1 else 's were'),
+        '\n and \n'.join(str(s) for s in solutions))
+    )
+    print('\nSolving took {:.3f}s\n'.format(time.time()-start))
+    print('#'*60)
+    return solutions
+
+def find_solution(original_problem, pile, GUI_callback, solution=None):
+    nb_deadends = 0
+    if solution is None:
+        solution = np.zeros(original_problem.shape, dtype=np.int32) + DEFAULT_VALUE
+    while not is_finished(solution):
+        square = get_next_square(solution)
+        choices = get_possible_choices(original_problem, solution, square)
         if choices:
             choice = choices.pop()
-            problem[square] = choice
-            GUI_callback(problem)
+            solution[square] = choice
+            GUI_callback(solution)
             if choices:
-                pile = add_choices_to_pile(problem, pile, square, choices)
+                pile = add_choices_to_pile(solution, pile, square, choices)
         else:
             nb_deadends += 1
-            problem = try_next_solution(pile)
-            print('extract old problem from pile: ', problem)
-            print('size of pile is', len(pile))
+            solution = try_next_solution(pile)
+    GUI_callback(solution, valid=True)
     print('number of deadends:', nb_deadends)
-    return problem
+    return solution
+
 
 def try_next_solution(pile):
     if pile:
-        problem, square, choice = pile.pop()
-        problem[square] = choice
-        return problem
+        solution, square, choice = pile.pop()
+        solution[square] = choice
+        return solution
     else:
         raise NoSolutionError('no more entries in pile')
 
-def add_choices_to_pile(problem, pile, square, choices):
+def add_choices_to_pile(solution, pile, square, choices):
     for choice in choices:
-        pile.append((np.copy(problem), square, choice))
+        pile.append((np.copy(solution), square, choice))
     return pile
 
-def get_possible_choices(original_problem, problem, square):
+def get_possible_choices(original_problem, solution, square):
     choices = []
-    constrains = get_constrains(problem, square)
+    constrains = get_constrains(solution, square)
     for alternative in get_alternatives(original_problem[square]):
         if satisfy_constrains(alternative, constrains):
             choices.append(alternative)
@@ -84,15 +110,15 @@ def satisfy_constrains(shape, constrains):
             return False
     return True
 
-def get_constrains(problem, square):
+def get_constrains(solution, square):
     line, col = square
-    last_line = problem.shape[0] - 1
-    last_col  = problem.shape[1] - 1
+    last_line = solution.shape[0] - 1
+    last_col  = solution.shape[1] - 1
 
     if line == 0:
         line_up = False
     else:
-        up_square = problem[line - 1, col]
+        up_square = solution[line - 1, col]
         if up_square == DEFAULT_VALUE:
             line_up = None
         elif up_square in LINE_DOWN:
@@ -103,7 +129,7 @@ def get_constrains(problem, square):
     if line == last_line:
         line_down = False
     else:
-        down_square = problem[line + 1, col]
+        down_square = solution[line + 1, col]
         if down_square == DEFAULT_VALUE:
             line_down = None
         elif down_square in LINE_UP:
@@ -114,7 +140,7 @@ def get_constrains(problem, square):
     if col == 0:
         line_left = False
     else:
-        left_square = problem[line, col - 1]
+        left_square = solution[line, col - 1]
         if left_square == DEFAULT_VALUE:
             line_left = None
         elif left_square in LINE_RIGHT:
@@ -125,7 +151,7 @@ def get_constrains(problem, square):
     if col == last_col:
         line_right = False
     else:
-        right_square = problem[line, col + 1]
+        right_square = solution[line, col + 1]
         if right_square == DEFAULT_VALUE:
             line_right = None
         elif right_square in LINE_LEFT:
@@ -139,20 +165,20 @@ def get_constrains(problem, square):
         'left': line_left,
         'right': line_right
     }
-    print('Constrains for {} {}: {}\nin {}'.format(line, col, lines, problem))
+    # print('Constrains for {} {}: {}\nin {}'.format(line, col, lines, solution))
     return lines
 
-def get_next_square(problem):
-    for i in range(problem.shape[0]):
-        for j in range(problem.shape[1]):
-            if problem[i, j] == DEFAULT_VALUE:
+def get_next_square(solution):
+    for i in range(solution.shape[0]):
+        for j in range(solution.shape[1]):
+            if solution[i, j] == DEFAULT_VALUE:
                 return (i, j)
     else:
-        raise ValueError('no next square: {}'.format(problem))
+        raise ValueError('no next square: {}'.format(solution))
 
-def is_finished(problem):
+def is_finished(solution):
     try:
-        get_next_square(problem)
+        get_next_square(solution)
         return False
     except ValueError:
         return True
@@ -171,13 +197,13 @@ def draw_square(canvas, direction, l, c, square_size):
     canvas.create_line(center[0], center[1], center[0] + delta[0], center[1] + delta[1], fill='white', width=width)
     canvas.create_rectangle(center[0] - width//2, center[1] - width//2, center[0] + width//2, center[1] + width//2, fill='grey', outline='grey')
 
-def draw(canvas, problem, solved=False, slow=False):
+def draw(canvas, solution, solved=False, slow=False):
     global square_size
     canvas.delete('all')
-    line, col = problem.shape
+    line, col = solution.shape
     for l in range(line):
         for c in range(col):
-            shape = problem[l, c]
+            shape = solution[l, c]
             for direction, shapes in LINES.items():
                 if shape in shapes:
                     draw_square(canvas, direction, l, c, square_size)
@@ -185,17 +211,26 @@ def draw(canvas, problem, solved=False, slow=False):
         canvas.create_line(0, square_size * l, square_size * col, square_size * l, fill='grey')
     for c in range(1, col):
         canvas.create_line(square_size * c, 0, square_size * c, square_size * line, fill='grey')
+
     if solved:
         canvas.configure(background='green')
+    else:
+        canvas.configure(background='red')
+
     if slow:
         import time
         time.sleep(0.1)
     canvas.update()
 
 
-def GUI_solve(canvas, problem, slow):
+def GUI_solve(canvas, solution, slow):
     try:
-        solution = solve(problem, GUI_callback=lambda problem: draw(canvas, problem, slow=slow))
+        solutions = solve(
+            solution,
+            find_all=True,
+            GUI_callback=lambda solution, valid=False: draw(canvas, solution, slow=slow, solved=valid)
+        )
+        solution = solutions.pop()
         draw(canvas, solution, solved=True)
     except NoSolutionError:
         print('This problem has no solution')
@@ -217,18 +252,18 @@ if __name__ == '__main__':
                          [0, 1, 3, 3, 1, 0, 1],
                          [1, 5, 5, 5, 3, 7, 3],
                          [3, 3, 3, 3, 0, 1, 0]],
-                        dtype=np.int32)
+                        dtype=np.int32).transpose()
     problem = problem3
-    print(problem)
 
     GUI = True
     SLOW = False
     if not GUI:
         try:
-            solution = solve(problem)
-            print(solution)
+            solution = solve(problem, find_all=True)
         except NoSolutionError:
-            print('This problem has no solution')
+            print('#'*60, '\n')
+            print('This problem has no solution\n')
+            print('#'*60)
     else:
         global square_size
         square_size = 30
@@ -239,6 +274,7 @@ if __name__ == '__main__':
         root.geometry('{}x{}'.format(square_size*col, 2*square_size*line + 50))
 
         canvas1 = tkinter.Canvas(root, width=square_size*col, height=square_size*line)
+        draw(canvas1, problem)
         canvas1.configure(background='black')
         canvas1.pack()
 
@@ -246,7 +282,6 @@ if __name__ == '__main__':
         canvas2.configure(background='red')
         canvas2.pack()
 
-        draw(canvas1, problem)
         button = tkinter.Button(root, text='Solve', command=lambda: GUI_solve(canvas2, problem, SLOW)).pack(expand=1)
         root.mainloop()
 
