@@ -1,4 +1,4 @@
-from solver import LINES, NoSolutionError, solve
+from solver import LINES, solve
 
 def draw_square(canvas, direction, l, c, square_size):
     center = (square_size * (c + 0.5), square_size * (l + 0.5))
@@ -35,27 +35,43 @@ def draw(canvas, solution, solved=False, slow=False):
     else:
         canvas.configure(background='red')
 
+    canvas.update()
+
     if slow:
         import time
         time.sleep(0.1)
-    canvas.update()
+    if solved and PAUSE_ON_SOLUTION_G:
+        import time
+        time.sleep(0.4)
 
 
-def GUI_solve(canvas, solution, slow):
-    try:
-        solutions = solve(
-            solution,
-            find_all=True,
-            GUI_callback=lambda solution, valid=False: draw(canvas, solution, slow=slow, solved=valid)
-        )
-        solution = solutions.pop()
-        draw(canvas, solution, solved=True)
-    except NoSolutionError:
-        print('This problem has no solution')
+def GUI_solve(canvas, solution, slow, fast):
+    from misc import console_print_solutions
+    from time import time, sleep
+    start = time()
+    if fast:
+        callback = lambda solution, valid=False: None
+    else:
+        callback = lambda solution, valid=False: draw(canvas, solution, slow=slow, solved=valid)
 
-def start_GUI(problem, SLOW_STEP=False):
+    solutions = solve(
+        solution,
+        find_all=True,
+        GUI_callback=callback
+    )
+    console_print_solutions(solutions, start)
+    if solutions:
+        for solution in solutions:
+            draw(canvas, solution, solved=True)
+            sleep(0.5)
+
+
+def start_GUI(problem, SLOW_STEP=False, FAST=True, PAUSE_ON_SOLUTION=True):
     global square_size
-    square_size = 30
+    square_size = 40
+    global PAUSE_ON_SOLUTION_G
+    PAUSE_ON_SOLUTION_G = PAUSE_ON_SOLUTION
+
     line, col = problem.shape
 
     import tkinter
@@ -71,9 +87,10 @@ def start_GUI(problem, SLOW_STEP=False):
     canvas2.configure(background='red')
     canvas2.pack()
 
-    def start_solving(event=None): GUI_solve(canvas2, problem, SLOW_STEP)
+    def start_solving(event=None):
+        GUI_solve(canvas2, problem, SLOW_STEP, FAST)
+    root.bind('<Return>', start_solving)
     button = tkinter.Button(root, text='Solve', command=start_solving)
     button.pack(expand=1)
-    root.bind('<Return>', start_solving)
 
     root.mainloop()

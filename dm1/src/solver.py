@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import numpy as np
-import time
+from time import time
 
 DEFAULT_VALUE = -1
 
@@ -27,13 +27,13 @@ SHAPES_BY_SIZE = [ONE, TWO_CORNER, TWO_STRAIGHT, THREE, FOUR, (0,), (15,)]
 class NoSolutionError(Exception):
     pass
 
-def solve(original_problem, find_all=False, GUI_callback=lambda problem, valid=False: None):
-    start = time.time()
+def solve(original_problem, find_all=False, GUI_callback=(lambda problem, valid=False: None)):
     pile = []
     solutions = []
-    solutions.append(
-        find_solution(original_problem, pile, GUI_callback)
-    )
+    try:
+        solutions.append(find_solution(original_problem, pile, GUI_callback))
+    except NoSolutionError:
+        pass
     if find_all:
         while pile:
             try:
@@ -42,14 +42,6 @@ def solve(original_problem, find_all=False, GUI_callback=lambda problem, valid=F
                 )
             except NoSolutionError:
                 pass
-    print('#'*60, '\n')
-    print('{} solution{} found:\n\n{}'.format(
-        len(solutions),
-        (' was' if len(solutions) == 1 else 's were'),
-        '\n and \n'.join(str(s) for s in solutions))
-    )
-    print('\nSolving took {:.3f}s\n'.format(time.time()-start))
-    print('#'*60)
     return solutions
 
 def find_solution(original_problem, pile, GUI_callback, solution=None):
@@ -69,9 +61,8 @@ def find_solution(original_problem, pile, GUI_callback, solution=None):
             nb_deadends += 1
             solution = try_next_solution(pile)
     GUI_callback(solution, valid=True)
-    print('number of deadends:', nb_deadends)
+    # print('number of deadends:', nb_deadends)
     return solution
-
 
 def try_next_solution(pile):
     if pile:
@@ -114,8 +105,8 @@ def satisfy_constrains(shape, constrains):
 
 def get_constrains(solution, square):
     line, col = square
-    last_line = solution.shape[0] - 1
-    last_col  = solution.shape[1] - 1
+    nb_line = solution.shape[0] - 1
+    nb_col  = solution.shape[1] - 1
 
     if line == 0:
         line_up = False
@@ -128,7 +119,7 @@ def get_constrains(solution, square):
         else:
             line_up = False
 
-    if line == last_line:
+    if line == nb_line:
         line_down = False
     else:
         down_square = solution[line + 1, col]
@@ -150,7 +141,7 @@ def get_constrains(solution, square):
         else:
             line_left = False
 
-    if col == last_col:
+    if col == nb_col:
         line_right = False
     else:
         right_square = solution[line, col + 1]
@@ -186,58 +177,26 @@ def is_finished(solution):
         return True
 
 if __name__ == '__main__':
-    problem1 = np.array([[1, 7, 3],
-                         [1, 3, 3],
-                         [3, 5, 1]],
-                        dtype=np.int32)
-    problem2 = np.array([[1, 1, 1, 3, 3],
-                         [7, 3, 3, 3, 5],
-                         [3, 3, 3, 5, 3],
-                         [3, 7, 5, 3, 1],
-                         [3, 7, 5, 7, 3]],
-                        dtype=np.int32)
-    problem3 = np.array([[1, 0, 0, 0, 1],
-                         [7, 3, 0, 3, 7],
-                         [3, 3, 0, 3, 3],
-                         [1, 1, 1, 1, 1],
-                         [1, 1, 1, 1, 1]],
-                        dtype=np.int32)
-    problem4 = np.array([[3, 5, 5, 3, 3, 3, 1],
-                         [3, 5, 5, 3, 3, 7, 1],
-                         [1, 1, 3, 7, 3, 7, 3],
-                         [1, 1, 3, 3, 3, 7, 3],
-                         [1, 1, 3, 7, 3, 3, 1],
-                         [3, 3, 3, 3, 1, 3, 1],
-                         [0, 1, 3, 3, 1, 0, 1],
-                         [1, 5, 5, 5, 3, 7, 3],
-                         [3, 3, 3, 3, 0, 1, 0]],
-                        dtype=np.int32).transpose()
-    problem = problem3
 
-    GUI = True
-    SLOW_STEP = False
+    EXAMPLE = 3
     INPUT_PROBLEM = False
+    GUI = True
+    GUI_FAST= True
+    GUI_SLOW_STEP = False
+    GUI_PAUSE_ON_SOLUTION = False
+
     if INPUT_PROBLEM:
-        print('Please type the problem')
-        partial_problem = []
-        partial_problem.append(input('> '))
-        for i in range(len(partial_problem[0].split()) - 1):
-            partial_problem.append(input('> '))
-        clean_problem = []
-        for line in partial_problem:
-            for c in [('A', '10'), ('B', '11'), ('C', '12'), ('D', '13'), ('E', '14'), ('F', '15')]:
-                line = line.replace(*c)
-            clean_problem.append([int(shape) for shape in line.split()])
-        problem = np.array(clean_problem, dtype=np.int32)
+        from misc import get_input
+        problem = np.array(get_input(), dtype=np.int32)
+    else:
+        from misc import get_example
+        problem = get_example(EXAMPLE)
 
     if GUI:
         from GUI import start_GUI
-        start_GUI(problem, SLOW_STEP=SLOW_STEP)
+        start_GUI(problem, SLOW_STEP=GUI_SLOW_STEP, FAST=GUI_FAST, PAUSE_ON_SOLUTION=GUI_PAUSE_ON_SOLUTION)
     else:
-        try:
-            solution = solve(problem, find_all=True)
-        except NoSolutionError:
-            print('#'*60, '\n')
-            print('This problem has no solution\n')
-            print('#'*60)
-
+        from misc import console_print_solutions
+        start = time()
+        solutions = solve(problem, find_all=True)
+        console_print_solutions(solutions, start)
