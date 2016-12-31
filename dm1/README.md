@@ -20,7 +20,7 @@ $ .src/solver.py -s
 # solve an example (number between 0 and 4) and show all the steps
 $ .src/solver.py -e 3 -p
 
-# read the standard input and solve fast
+# read the standard input and solve hide the steps (faster)
 $ .src/solver.py -s -f
 
 # disable the GUI

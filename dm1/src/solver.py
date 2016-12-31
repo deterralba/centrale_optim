@@ -179,6 +179,7 @@ def is_finished(solution):
     except ValueError:
         return True
 
+
 if __name__ == '__main__':
 
     import misc
