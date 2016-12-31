@@ -27,3 +27,11 @@ $ .src/solver.py -s -f
 $ .src/solver.py -e 2 -n
 ```
 
+## Misc
+
+The shapes are :
+
+![shapes](tuiles.svg)
+
+
+
