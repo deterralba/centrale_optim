@@ -83,14 +83,14 @@ def read_args():
     import argparse
     import sys
     parser = argparse.ArgumentParser()
-    parser.add_argument('-n', '--nogui',
+    parser.add_argument('--nogui',
                         help='Doesn\'t start the GUI',
                         action='store_true', default=False)
     parser.add_argument('-f', '--fast',
-                        help='GUI: Hide all the alrgorithm steps.',
+                        help='Hide all the alrgorithm steps.',
                         action='store_true', default=False)
     parser.add_argument('-p', '--show-steps',
-                        help='GUI: Show all the arlgorithm steps.',
+                        help='Show all the arlgorithm steps.',
                         action='store_true', default=False)
     parser.add_argument('-s', '--console-input',
                         help='Solve the problem given in the standard input',

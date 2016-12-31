@@ -181,24 +181,24 @@ def is_finished(solution):
 
 if __name__ == '__main__':
 
-    EXAMPLE = 3
-    INPUT_PROBLEM = False
-    GUI = True
-    GUI_FAST= True
-    GUI_SHOW_STEPS = True
+    import misc
+    args = misc.read_args()
+
+    EXAMPLE = args.example
+    INPUT_PROBLEM = args.console_input
+    GUI = not args.nogui
+    GUI_FAST= args.fast
+    GUI_SHOW_STEPS = args.show_steps
 
     if INPUT_PROBLEM:
-        from misc import get_input
-        problem = np.array(get_input(), dtype=np.int32)
+        problem = np.array(misc.get_input(), dtype=np.int32)
     else:
-        from misc import get_example
-        problem = get_example(EXAMPLE)
+        problem = misc.get_example(EXAMPLE)
 
     if GUI:
         from GUI import start_GUI
         start_GUI(problem, SHOW_STEPS=GUI_SHOW_STEPS, FAST=GUI_FAST)
     else:
-        from misc import console_print_solutions
         start = time()
         solutions = solve(problem)
-        console_print_solutions(solutions, start)
+        misc.console_print_solutions(solutions, start)
