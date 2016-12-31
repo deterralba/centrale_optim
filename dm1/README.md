@@ -42,5 +42,6 @@ The shapes are :
 
 ![shapes](tuiles.svg)
 
+Link to the [TP](http://www-desir.lip6.fr/~durrc/Iut/optim/t/dm1-connect).
 
 
