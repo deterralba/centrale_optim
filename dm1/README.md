@@ -27,6 +27,15 @@ $ .src/solver.py -s -f
 $ .src/solver.py -e 2 -n
 ```
 
+## Démarche
+
+J'ai choisi de coder tout le programme pour comprendre comment chaque élément fonctionne.
+
+Le coeur du programme est dans la fonction `solver`.
+
+L'arbre est modélisé par une pile Last In First Out qui permet de continuer l'exploration de l'arbre lorsque l'on rencontre
+une impasse.
+
 ## Misc
 
 The shapes are :
