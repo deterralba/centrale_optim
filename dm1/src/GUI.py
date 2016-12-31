@@ -15,7 +15,7 @@ def draw_square(canvas, direction, l, c, square_size):
     canvas.create_rectangle(center[0] - width//2, center[1] - width//2, center[0] + width//2, center[1] + width//2, fill='grey', outline='grey')
 
 
-def draw(canvas, solution, solved=False, slow=False):
+def draw(canvas, solution, solved=False, SHOW_STEPS=False):
     global square_size
     canvas.delete('all')
     line, col = solution.shape
@@ -37,28 +37,25 @@ def draw(canvas, solution, solved=False, slow=False):
 
     canvas.update()
 
-    if slow:
+    if SHOW_STEPS:
         import time
         time.sleep(0.1)
-    if solved and PAUSE_ON_SOLUTION_G:
-        import time
-        time.sleep(0.4)
+        if solved:
+            time.sleep(0.3)
 
 
-def GUI_solve(canvas, solution, slow, fast):
+def GUI_solve(canvas, problem, SHOW_STEPS, FAST):
     from misc import console_print_solutions
     from time import time, sleep
     start = time()
-    if fast:
-        callback = lambda solution, valid=False: None
+    if FAST:
+        solutions = solve(problem)
     else:
-        callback = lambda solution, valid=False: draw(canvas, solution, slow=slow, solved=valid)
+        solutions = solve(
+            problem,
+            GUI_callback= lambda solution, valid=False: draw(canvas, solution, SHOW_STEPS=SHOW_STEPS, solved=valid)
+        )
 
-    solutions = solve(
-        solution,
-        find_all=True,
-        GUI_callback=callback
-    )
     console_print_solutions(solutions, start)
     if solutions:
         for solution in solutions:
@@ -66,11 +63,9 @@ def GUI_solve(canvas, solution, slow, fast):
             sleep(0.5)
 
 
-def start_GUI(problem, SLOW_STEP=False, FAST=True, PAUSE_ON_SOLUTION=True):
+def start_GUI(problem, SHOW_STEPS, FAST):
     global square_size
     square_size = 40
-    global PAUSE_ON_SOLUTION_G
-    PAUSE_ON_SOLUTION_G = PAUSE_ON_SOLUTION
 
     line, col = problem.shape
 
@@ -88,7 +83,7 @@ def start_GUI(problem, SLOW_STEP=False, FAST=True, PAUSE_ON_SOLUTION=True):
     canvas2.pack()
 
     def start_solving(event=None):
-        GUI_solve(canvas2, problem, SLOW_STEP, FAST)
+        GUI_solve(canvas2, problem, SHOW_STEPS, FAST)
     root.bind('<Return>', start_solving)
     button = tkinter.Button(root, text='Solve', command=start_solving)
     button.pack(expand=1)

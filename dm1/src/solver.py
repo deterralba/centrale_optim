@@ -27,14 +27,17 @@ SHAPES_BY_SIZE = [ONE, TWO_CORNER, TWO_STRAIGHT, THREE, FOUR, (0,), (15,)]
 class NoSolutionError(Exception):
     pass
 
-def solve(original_problem, find_all=False, GUI_callback=(lambda problem, valid=False: None)):
+def solve(original_problem, find_only_one=False, GUI_callback=(lambda problem, valid=False: None)):
     pile = []
     solutions = []
     try:
         solutions.append(find_solution(original_problem, pile, GUI_callback))
     except NoSolutionError:
         pass
-    if find_all:
+
+    if find_only_one:
+        return solutions.pop()
+    else:
         while pile:
             try:
                 solutions.append(
@@ -182,8 +185,7 @@ if __name__ == '__main__':
     INPUT_PROBLEM = False
     GUI = True
     GUI_FAST= True
-    GUI_SLOW_STEP = False
-    GUI_PAUSE_ON_SOLUTION = False
+    GUI_SHOW_STEPS = True
 
     if INPUT_PROBLEM:
         from misc import get_input
@@ -194,9 +196,9 @@ if __name__ == '__main__':
 
     if GUI:
         from GUI import start_GUI
-        start_GUI(problem, SLOW_STEP=GUI_SLOW_STEP, FAST=GUI_FAST, PAUSE_ON_SOLUTION=GUI_PAUSE_ON_SOLUTION)
+        start_GUI(problem, SHOW_STEPS=GUI_SHOW_STEPS, FAST=GUI_FAST)
     else:
         from misc import console_print_solutions
         start = time()
-        solutions = solve(problem, find_all=True)
+        solutions = solve(problem)
         console_print_solutions(solutions, start)
