@@ -58,13 +58,16 @@ def GUI_solve(canvas, problem, SHOW_STEPS, FAST):
 
     console_print_solutions(solutions, start)
     if solutions:
-        for solution in solutions:
-            draw(canvas, solution, solved=True)
-            sleep(0.5)
+        global button
+        button.pack_forget()
+        while True:
+            for solution in solutions:
+                draw(canvas, solution, solved=True)
+                sleep(0.8)
 
 
 def start_GUI(problem, SHOW_STEPS, FAST):
-    global square_size
+    global square_size, button
     square_size = 40
 
     line, col = problem.shape
