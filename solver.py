@@ -236,7 +236,10 @@ def GUI_solve(canvas, solution, slow):
         print('This problem has no solution')
 
 if __name__ == '__main__':
-    problem1 = np.array([[1, 7, 3], [1, 3, 3], [3, 5, 1]], dtype=np.int32)
+    problem1 = np.array([[1, 7, 3],
+                         [1, 3, 3],
+                         [3, 5, 1]],
+                        dtype=np.int32)
     problem2 = np.array([[1, 1, 1, 3, 3],
                          [7, 3, 3, 3, 5],
                          [3, 3, 3, 5, 3],
@@ -256,7 +259,20 @@ if __name__ == '__main__':
     problem = problem3
 
     GUI = True
-    SLOW = False
+    SLOW_STEP = False
+    INPUT_PROBLEM = True
+    if INPUT_PROBLEM:
+        print('Please type the problem')
+        partial_problem = []
+        partial_problem.append(input('> '))
+        for i in range(len(partial_problem[0].split()) - 1):
+            partial_problem.append(input('> '))
+        clean_problem = []
+        for line in partial_problem:
+            for c in [('A', '10'), ('B', '11'), ('C', '12'), ('D', '13'), ('E', '14'), ('F', '15')]:
+                line = line.replace(*c)
+            clean_problem.append([int(shape) for shape in line.split()])
+        problem = np.array(clean_problem, dtype=np.int32)
     if not GUI:
         try:
             solution = solve(problem, find_all=True)
@@ -282,7 +298,7 @@ if __name__ == '__main__':
         canvas2.configure(background='red')
         canvas2.pack()
 
-        button = tkinter.Button(root, text='Solve', command=lambda: GUI_solve(canvas2, problem, SLOW)).pack(expand=1)
+        button = tkinter.Button(root, text='Solve', command=lambda: GUI_solve(canvas2, problem, SLOW_STEP)).pack(expand=1)
         root.mainloop()
 
 
