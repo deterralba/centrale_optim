@@ -28,56 +28,54 @@ class NoSolutionError(Exception):
     pass
 
 def solve(original_problem, find_only_one=False, GUI_callback=(lambda problem, valid=False: None)):
-    pile = []
+    empty_problem = np.zeros(original_problem.shape, dtype=np.int32) + DEFAULT_VALUE
+    pile = [empty_problem]
     solutions = []
-    try:
-        solutions.append(find_solution(original_problem, pile, GUI_callback))
-    except NoSolutionError:
-        pass
-
-    if find_only_one:
-        return solutions.pop()
-    else:
-        while pile:
-            try:
-                solutions.append(
-                    find_solution(original_problem, pile, GUI_callback, try_next_solution(pile))
-                )
-            except NoSolutionError:
-                pass
+    while pile:
+        try:
+            solutions.append(
+                find_solution(original_problem, pile, GUI_callback)
+            )
+            if solutions and find_only_one:
+                return solutions.pop()
+        except NoSolutionError:
+            pass
     return solutions
 
-def find_solution(original_problem, pile, GUI_callback, solution=None):
+def find_solution(original_problem, pile, GUI_callback):
+    '''
+        Returns a solution, by trying to complete the problems given in the pile.
+        Raises NoSolutionError if there is no solution
+    '''
+    solution = try_next_solution(pile)
     nb_deadends = 0
-    if solution is None:
-        solution = np.zeros(original_problem.shape, dtype=np.int32) + DEFAULT_VALUE
     while not is_finished(solution):
         square = get_next_square(solution)
         choices = get_possible_choices(original_problem, solution, square)
         if choices:
             choice = choices.pop()
             solution[square] = choice
-            GUI_callback(solution)
+            GUI_callback(solution)  # this as only on visual effect, it doesn't change the solution
             if choices:
                 pile = add_choices_to_pile(solution, pile, square, choices)
         else:
             nb_deadends += 1
             solution = try_next_solution(pile)
-    GUI_callback(solution, valid=True)
+    GUI_callback(solution, valid=True)  # this as only on visual effect, it doesn't change the solution
     # print('number of deadends:', nb_deadends)
     return solution
 
 def try_next_solution(pile):
     if pile:
-        solution, square, choice = pile.pop()
-        solution[square] = choice
-        return solution
+        return pile.pop()
     else:
         raise NoSolutionError('no more entries in pile')
 
 def add_choices_to_pile(solution, pile, square, choices):
     for choice in choices:
-        pile.append((np.copy(solution), square, choice))
+        new_solution = np.copy(solution)
+        new_solution[square] = choice
+        pile.append(new_solution)
     return pile
 
 def get_possible_choices(original_problem, solution, square):
