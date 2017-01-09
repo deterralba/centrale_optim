@@ -55,13 +55,13 @@ def find_solution(original_problem, pile, GUI_callback):
         if choices:
             choice = choices.pop()
             solution[square] = choice
-            GUI_callback(solution)  # this as only on visual effect, it doesn't change the solution
+            GUI_callback(solution)  # this has only on visual effect, it doesn't change the solution
             if choices:
                 pile = add_choices_to_pile(solution, pile, square, choices)
         else:
             nb_deadends += 1
             solution = try_next_solution(pile)
-    GUI_callback(solution, valid=True)  # this as only on visual effect, it doesn't change the solution
+    GUI_callback(solution, valid=True)  # this has only on visual effect, it doesn't change the solution
     # print('number of deadends:', nb_deadends)
     return solution
 
