@@ -2,6 +2,7 @@
 
 import numpy as np
 from time import time
+from copy import deepcopy
 
 DEFAULT_VALUE = -1
 
@@ -29,7 +30,8 @@ class NoSolutionError(Exception):
 
 def solve(original_problem, find_only_one=False, GUI_callback=(lambda problem, valid=False: None)):
     empty_problem = np.zeros(original_problem.shape, dtype=np.int32) + DEFAULT_VALUE
-    pile = [empty_problem]
+    domains = get_domains(original_problem)
+    pile = [(empty_problem, domains)]
     solutions = []
     while pile:
         try:
@@ -47,20 +49,20 @@ def find_solution(original_problem, pile, GUI_callback):
         Returns a solution, by trying to complete the problems given in the pile.
         Raises NoSolutionError if there is no solution
     '''
-    solution = try_next_solution(pile)
+    solution, domains = try_next_solution(pile)
     nb_deadends = 0
-    while not is_finished(solution):
-        square = get_next_square(solution)
+    while not is_finished(solution, domains):
+        square = get_next_square(solution, domains)
         choices = get_possible_choices(original_problem, solution, square)
         if choices:
             choice = choices.pop()
             solution[square] = choice
             GUI_callback(solution)  # this has only on visual effect, it doesn't change the solution
             if choices:
-                pile = add_choices_to_pile(solution, pile, square, choices)
+                pile = add_choices_to_pile(solution, domains,  pile, square, choices)
         else:
             nb_deadends += 1
-            solution = try_next_solution(pile)
+            solution, domains = try_next_solution(pile)
     GUI_callback(solution, valid=True)  # this has only on visual effect, it doesn't change the solution
     # print('number of deadends:', nb_deadends)
     return solution
@@ -71,11 +73,11 @@ def try_next_solution(pile):
     else:
         raise NoSolutionError('no more entries in pile')
 
-def add_choices_to_pile(solution, pile, square, choices):
+def add_choices_to_pile(solution, domains,  pile, square, choices):
     for choice in choices:
         new_solution = np.copy(solution)
         new_solution[square] = choice
-        pile.append(new_solution)
+        pile.append((new_solution, deepcopy(domains)))  # check that the deepcopy works, and use the restricted domains
     return pile
 
 def get_possible_choices(original_problem, solution, square):
@@ -85,6 +87,10 @@ def get_possible_choices(original_problem, solution, square):
         if satisfy_constrains(alternative, constrains):
             choices.append(alternative)
     return choices
+
+def get_domains(original_problem):  # tested, don't forget to update the test
+    line, col =  original_problem.shape
+    return [[set(get_alternatives(original_problem[l, c])) for c in range(col)] for l in range(line)]
 
 def get_alternatives(shape):
     for shapes in SHAPES_BY_SIZE:
@@ -162,17 +168,24 @@ def get_constrains(solution, square):
     # print('Constrains for {} {}: {}\nin {}'.format(line, col, lines, solution))
     return lines
 
-def get_next_square(solution):
-    for i in range(solution.shape[0]):
-        for j in range(solution.shape[1]):
-            if solution[i, j] == DEFAULT_VALUE:
-                return (i, j)
-    else:
-        raise ValueError('no next square: {}'.format(solution))
+def get_next_square(solution, domains):
+    ''' Returns the position of the square with the smallest domain '''
+    free_squares = _extract_free_squares_and_their_domain_size(solution, domains)
+    mini = min(free_squares, key=lambda x: x[1])[0]
+    return mini
 
-def is_finished(solution):
+def _extract_free_squares_and_their_domain_size(solution, domains):
+    line, col = solution.shape
+    free_squares = []
+    for l in range(line):
+        for c in range(col):
+            if solution[l, c] == DEFAULT_VALUE:
+                free_squares.append(((l, c), len(domains[l][c])))
+    return free_squares
+
+def is_finished(solution, domains):
     try:
-        get_next_square(solution)
+        get_next_square(solution, domains)
         return False
     except ValueError:
         return True
