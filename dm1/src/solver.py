@@ -25,6 +25,9 @@ TWO_CORNER   = (5, 10)  # A
 TWO_STRAIGHT = (3,  6, 9, 12)  # C
 SHAPES_BY_SIZE = [ONE, TWO_CORNER, TWO_STRAIGHT, THREE, FOUR, (0,), (15,)]
 
+FORWARD_CHECK = True
+ARC_CONSISTENCY = True
+
 class NoSolutionError(Exception):
     pass
 
@@ -50,22 +53,83 @@ def find_solution(original_problem, pile, GUI_callback):
         Raises NoSolutionError if there is no solution
     '''
     solution, domains = try_next_solution(pile)
+    is_deadend = False
     nb_deadends = 0
     while not is_finished(solution, domains):
         square = get_next_square(solution, domains)
-        choices = get_possible_choices(original_problem, solution, square)
-        if choices:
-            choice = choices.pop()
+
+        # domain = get_domain_of_square(domains, square)
+        # valid_domain = get_valid_domain(solution, square, domain)  # all shapes compatible with the 4 adjacent borders
+        # domains = update_domains(domains, square, valid_domain)  # pure, update domains to remove the shapes not compatible
+
+        domains, valid_domain, old_domain = update_square_domain(solution, domains, square)
+
+        print('after update', square, valid_domain)
+        #import pprint
+        #pprint.pprint(domains)
+
+        if not valid_domain:
+            is_deadend = True
+        else:
+            choice = min(valid_domain)
             solution[square] = choice
             GUI_callback(solution)  # this has only on visual effect, it doesn't change the solution
-            if choices:
-                pile = add_choices_to_pile(solution, domains,  pile, square, choices)
-        else:
+
+            other_choices = valid_domain - {choice}
+            if other_choices:
+                pile = add_choices_to_pile(solution, domains, pile, square, valid_domain - {choice})
+
+            if FORWARD_CHECK:
+                domains, is_deadend = forward_check(solution, domains, square, old_domain, valid_domain)
+                if ARC_CONSISTENCY:
+                    pass
+
+        if is_deadend:
+            print('DEAD')
             nb_deadends += 1
             solution, domains = try_next_solution(pile)
+            is_deadend = False
     GUI_callback(solution, valid=True)  # this has only on visual effect, it doesn't change the solution
-    # print('number of deadends:', nb_deadends)
+    print('number of deadends:', nb_deadends)
     return solution
+
+def forward_check(solution, domains, original_square, original_domain, original_valid_domain):
+    if original_domain == original_valid_domain:  # the domain did not change
+        return domains, False
+    else:
+        squares = get_adjacent_squares(solution, original_square)
+        for square in squares:
+            #old_domain = get_domain_of_square(domains, square)
+            #valid_domain = get_valid_domain(solution, square, old_domain)  # all shapes compatible with the 4 adjacent borders
+            #new_domains = update_domains(domains, square, valid_domain)  # pure, update domains to remove the shapes not compatible
+
+            domains, valid_domain, old_domain = update_square_domain(solution, domains, square)
+            print('FORWARD CHECK: removed {} from square {} (adjacent of {})'.format(old_domain - valid_domain, square, original_square))
+            if not valid_domain:
+                print('FORWARD CHECK detected a dead end !')
+                return domains, True
+        else:
+            return domains, False
+
+def update_square_domain(solution, domains, square):
+    old_domain = get_domain_of_square(domains, square)
+    valid_domain = get_valid_domain(solution, square, old_domain)  # all shapes compatible with the 4 adjacent borders
+    new_domains = update_domains(domains, square, valid_domain)  # pure, update domains to remove the shapes not compatible
+    return new_domains, valid_domain, old_domain
+
+def get_adjacent_squares(solution, square):
+    line, col = solution.shape
+    l, c = square
+    squares = set()
+    if l >= 1:
+        squares.add((l-1, c))
+    if l <= line - 2:
+        squares.add((l+1, c))
+    if c >= 1:
+        squares.add((l, c-1))
+    if c <= col - 2:
+        squares.add((l, c+1))
+    return squares
 
 def try_next_solution(pile):
     if pile:
@@ -73,20 +137,28 @@ def try_next_solution(pile):
     else:
         raise NoSolutionError('no more entries in pile')
 
-def add_choices_to_pile(solution, domains,  pile, square, choices):
-    for choice in choices:
+def add_choices_to_pile(solution, domains,  pile, square, domain):
+    for choice in domain:
         new_solution = np.copy(solution)
         new_solution[square] = choice
         pile.append((new_solution, deepcopy(domains)))  # check that the deepcopy works, and use the restricted domains
     return pile
 
-def get_possible_choices(original_problem, solution, square):
-    choices = []
+def update_domains(domains, square, valid_domain):  # impure
+    new_domains = domains.copy()
+    new_domains[square[0]][square[1]] = valid_domain
+    return new_domains
+
+def get_domain_of_square(domains, square):
+    return domains[square[0]][square[1]]
+
+def get_valid_domain(solution, square, domain):
+    valid_domain = set()
     constrains = get_constrains(solution, square)
-    for alternative in get_alternatives(original_problem[square]):
+    for alternative in domain:
         if satisfy_constrains(alternative, constrains):
-            choices.append(alternative)
-    return choices
+            valid_domain.add(alternative)
+    return valid_domain
 
 def get_domains(original_problem):  # tested, don't forget to update the test
     line, col =  original_problem.shape
