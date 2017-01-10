@@ -58,13 +58,10 @@ def find_solution(original_problem, pile, GUI_callback):
     while not is_finished(solution, domains):
         square = get_next_square(solution, domains)
 
-        # domain = get_domain_of_square(domains, square)
-        # valid_domain = get_valid_domain(solution, square, domain)  # all shapes compatible with the 4 adjacent borders
-        # domains = update_domains(domains, square, valid_domain)  # pure, update domains to remove the shapes not compatible
-
+        # returns all shapes compatible with the 4 adjacent borders, pure, update domains to remove the shapes not compatible
         domains, valid_domain, old_domain = update_square_domain(solution, domains, square)
 
-        print('after update', square, valid_domain)
+        # print('after update', square, valid_domain)
         #import pprint
         #pprint.pprint(domains)
 
@@ -80,9 +77,9 @@ def find_solution(original_problem, pile, GUI_callback):
                 pile = add_choices_to_pile(solution, domains, pile, square, valid_domain - {choice})
 
             if FORWARD_CHECK:
-                domains, is_deadend = forward_check(solution, domains, square, old_domain, valid_domain)
+                domains, is_deadend, updated_squares = forward_check(solution, domains, square, old_domain, valid_domain)
                 if ARC_CONSISTENCY:
-                    pass
+                    domains, is_deadend = check_arc_consistency(solution, domains, updated_squares)
 
         if is_deadend:
             print('DEAD')
@@ -93,23 +90,38 @@ def find_solution(original_problem, pile, GUI_callback):
     print('number of deadends:', nb_deadends)
     return solution
 
+def check_arc_consistency(solution, domains, updated_squares):
+    pile = set(updated_squares)
+    is_deadend = False
+    new_domains = domains
+    while pile:
+        square = pile.pop()
+        new_domains, valid_domain, old_domain = update_square_domain(solution, new_domains, square)
+        if not valid_domain:
+            print('ARC CONSITENCY detected a dead end at {} !'.format(square))
+            is_deadend = True
+            break
+        if valid_domain != old_domain:
+            for sq in get_adjacent_squares(square):
+                pile.add(sq)
+    return new_domains, is_deadend
+
+
 def forward_check(solution, domains, original_square, original_domain, original_valid_domain):
-    if original_domain == original_valid_domain:  # the domain did not change
-        return domains, False
-    else:
+    is_deadend = False
+    updated_squares = set()
+    new_domains = domains
+    if original_domain != original_valid_domain:  # the domain did change
         squares = get_adjacent_squares(solution, original_square)
         for square in squares:
-            #old_domain = get_domain_of_square(domains, square)
-            #valid_domain = get_valid_domain(solution, square, old_domain)  # all shapes compatible with the 4 adjacent borders
-            #new_domains = update_domains(domains, square, valid_domain)  # pure, update domains to remove the shapes not compatible
-
-            domains, valid_domain, old_domain = update_square_domain(solution, domains, square)
-            print('FORWARD CHECK: removed {} from square {} (adjacent of {})'.format(old_domain - valid_domain, square, original_square))
+            new_domains, valid_domain, old_domain = update_square_domain(solution, new_domains, square)
+            # print('FORWARD CHECK: removed {} from square {} (adjacent of {})'.format(old_domain - valid_domain, square, original_square))
             if not valid_domain:
-                print('FORWARD CHECK detected a dead end !')
-                return domains, True
-        else:
-            return domains, False
+                print('FORWARD CHECK detected a dead end at {} !'.format(square))
+                is_deadend = True
+            if valid_domain != old_domain:
+                updated_squares.add(square)
+    return new_domains, is_deadend, updated_squares
 
 def update_square_domain(solution, domains, square):
     old_domain = get_domain_of_square(domains, square)
