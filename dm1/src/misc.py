@@ -83,6 +83,8 @@ def read_args():
     import argparse
     import sys
     parser = argparse.ArgumentParser()
+
+    # GUI
     parser.add_argument('-n', '--nogui',
                         help='Doesn\'t start the GUI',
                         action='store_true', default=False)
@@ -92,11 +94,22 @@ def read_args():
     parser.add_argument('-p', '--show-steps',
                         help='GUI: Show all the arlgorithm steps.',
                         action='store_true', default=False)
+
+    # INPUT
     parser.add_argument('-s', '--console-input',
                         help='Solve the problem given in the standard input',
                         action='store_true', default=False)
     parser.add_argument('-e', '--example',
                         help='Solve a known example, type a number between 0 and 4',
                         default='4', type=int)
+
+    # SOLVER
+    parser.add_argument('-c', '--forward-check',
+                        help='Solve the problem with forward check',
+                        action='store_true', default=False)
+    parser.add_argument('-a', '--arc-consistency',
+                        help='Solve the problem maintaining arc consistency (set forward-check to tTrue)',
+                        action='store_true', default=False)
+
     args = parser.parse_args()
     return args

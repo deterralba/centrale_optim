@@ -44,16 +44,22 @@ def draw(canvas, solution, solved=False, SHOW_STEPS=False):
             time.sleep(0.3)
 
 
-def GUI_solve(canvas, problem, SHOW_STEPS, FAST):
+def GUI_solve(canvas, problem, FORWARD_CHECK, ARC_CONSISTENCY, SHOW_STEPS, FAST):
     from misc import console_print_solutions
     from time import time, sleep
     start = time()
     if FAST:
-        solutions = solve(problem)
+        solutions = solve(
+            problem,
+            FORWARD_CHECK=FORWARD_CHECK,
+            ARC_CONSISTENCY=ARC_CONSISTENCY
+        )
     else:
         solutions = solve(
             problem,
-            GUI_callback= lambda solution, valid=False: draw(canvas, solution, SHOW_STEPS=SHOW_STEPS, solved=valid)
+            FORWARD_CHECK=FORWARD_CHECK,
+            ARC_CONSISTENCY=ARC_CONSISTENCY,
+            GUI_callback=lambda solution, valid=False: draw(canvas, solution, SHOW_STEPS=SHOW_STEPS, solved=valid)
         )
 
     console_print_solutions(solutions, start)
@@ -66,7 +72,7 @@ def GUI_solve(canvas, problem, SHOW_STEPS, FAST):
                 sleep(0.8)
 
 
-def start_GUI(problem, SHOW_STEPS, FAST):
+def start_GUI(problem, **params):
     global square_size, button
     square_size = 40
 
@@ -86,7 +92,11 @@ def start_GUI(problem, SHOW_STEPS, FAST):
     canvas2.pack()
 
     def start_solving(event=None):
-        GUI_solve(canvas2, problem, SHOW_STEPS, FAST)
+        GUI_solve(
+            canvas2,
+            problem,
+            **params
+        )
     root.bind('<Return>', start_solving)
     button = tkinter.Button(root, text='Solve', command=start_solving)
     button.pack(expand=1)
