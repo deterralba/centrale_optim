@@ -108,7 +108,7 @@ def read_args():
                         help='Solve the problem with forward check',
                         action='store_true', default=False)
     parser.add_argument('-a', '--arc-consistency',
-                        help='Solve the problem maintaining arc consistency (set forward-check to tTrue)',
+                        help='Solve the problem maintaining arc consistency (this set forward-check to True)',
                         action='store_true', default=False)
 
     args = parser.parse_args()
