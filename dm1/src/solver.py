@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-LOG = True
+LOG = False
 
 import numpy as np
 from time import time
