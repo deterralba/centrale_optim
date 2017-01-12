@@ -25,14 +25,14 @@ def _ask_input():
     print('Please enter the first line of the problem')
     partial_problem = []
     partial_problem.append(input('> '))
-    for i in range(len(partial_problem[0].split()) - 1):
+    for i in range(len(partial_problem[0]) - 1):
         partial_problem.append(input('> '))
 
     clean_problem = []
     for line in partial_problem:
         for c in [('A', '10'), ('B', '11'), ('C', '12'), ('D', '13'), ('E', '14'), ('F', '15')]:
             line = line.replace(*c)
-        clean_problem.append([int(shape) for shape in line.split()])
+        clean_problem.append([int(shape) for shape in line])
 
     for l in clean_problem:
         for c in l:

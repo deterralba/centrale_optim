@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+LOG = True
+
 import numpy as np
 from time import time
 from copy import deepcopy
@@ -32,14 +34,13 @@ POWER_INDEX = {
     'right': 3,
 }
 
-#FORWARD_CHECK = True  # overriden with command line args
-#ARC_CONSISTENCY = True  # overriden with command line args
 
 class NoSolutionError(Exception):
     pass
 
+
 def solve(original_problem, FORWARD_CHECK=True, ARC_CONSISTENCY=True, find_only_one=False, GUI_callback=(lambda problem, valid=False: None)):
-    print('FORWARD_CHECK: {}, ARC_CONSISTENCY: {}'.format(FORWARD_CHECK, ARC_CONSISTENCY))
+    print('FORWARD_CHECK: {}, ARC_CONSISTENCY: {}\n'.format(FORWARD_CHECK, ARC_CONSISTENCY))
     empty_problem = np.zeros(original_problem.shape, dtype=np.int32) + DEFAULT_VALUE
     domains = get_domains(original_problem)
     pile = [(empty_problem, domains)]
@@ -66,12 +67,8 @@ def find_solution(original_problem, pile, FORWARD_CHECK, ARC_CONSISTENCY, GUI_ca
     while not is_finished(solution, domains):
         square = get_next_square(solution, domains)
 
-        # returns all shapes compatible with the 4 adjacent borders, pure, update domains to remove the shapes not compatible
+        # returns all shapes compatible with the 4 adjacent borders, update domains to remove the shapes not compatible
         domains, valid_domain, old_domain = update_square_domain(solution, domains, square)
-
-        # print('after update', square, valid_domain)
-        #import pprint
-        #pprint.pprint(domains)
 
         if not valid_domain:
             is_deadend = True
@@ -84,22 +81,25 @@ def find_solution(original_problem, pile, FORWARD_CHECK, ARC_CONSISTENCY, GUI_ca
             if other_choices:
                 pile = add_choices_to_pile(solution, domains, pile, square, valid_domain - {choice})
 
-            #import pprint
-            #print('before', get_next_square(solution, domains))
-            #pprint.pprint(domains)
+            if LOG:
+                import pprint
+                print('before forward_check or arc consistency of ', square)
+                pprint.pprint(domains)
             if FORWARD_CHECK:
                 domains, is_deadend, updated_squares = forward_check(solution, domains, square, old_domain, valid_domain)
                 if ARC_CONSISTENCY and not is_deadend:
                     domains, is_deadend = check_arc_consistency(solution, domains, updated_squares)
-            #print('after', get_next_square(solution, domains))
-            #pprint.pprint(domains)
+            if LOG:
+                print('after forward_check or arc consistency of ', square)
+                pprint.pprint(domains)
 
         if is_deadend:
             nb_deadends += 1
             solution, domains = try_next_solution(pile)
             is_deadend = False
     GUI_callback(solution, valid=True)  # this has only on visual effect, it doesn't change the solution
-    #print('number of deadends:', nb_deadends)
+    if LOG:
+        print('number of deadends:', nb_deadends)
     return solution
 
 def check_arc_consistency(solution, domains, updated_squares):
@@ -121,7 +121,6 @@ def check_arc_consistency(solution, domains, updated_squares):
 def maintain_consistency(domains, square, original_square):
     original_square_domain = get_domain_of_square(domains, original_square)
     old_domain = get_domain_of_square(domains, square)
-    #print('Maintaining arc consistency  {} at {} VS {} at {}'.format(old_domain, square, original_square_domain, original_square))
     valid_domain = set()
     for shape in old_domain:
         if is_compatible(square, original_square, shape, original_square_domain):
@@ -169,7 +168,8 @@ def forward_check(solution, domains, original_square, original_domain, original_
         squares = get_adjacent_squares(solution, original_square)
         for square in squares:
             new_domains, valid_domain, old_domain = update_square_domain(solution, new_domains, square)
-            # print('FORWARD CHECK: removed {} from square {} (adjacent of {})'.format(old_domain - valid_domain, square, original_square))
+            if LOG:
+                print('FORWARD CHECK: removed {} from square {} (adjacent of {})'.format(old_domain - valid_domain, square, original_square))
             if not valid_domain:
                 print('FORWARD CHECK detected a dead end at {} !'.format(square))
                 is_deadend = True
@@ -223,7 +223,7 @@ def get_valid_domain(solution, square, domain):
     valid_domain = set()
     constrains = get_constrains(solution, square)
     for alternative in domain:
-        if satisfy_constrains(alternative, constrains): # TODO: I need to be smarter here and study the domains to restrain the domain, not only check the solution
+        if satisfy_constrains(alternative, constrains):
             valid_domain.add(alternative)
     return valid_domain
 
@@ -309,18 +309,16 @@ def get_constrains(solution, square):
 
 def get_next_square(solution, domains):
     ''' Returns the position of the square with the smallest domain '''
-    free_squares = _extract_free_squares_and_their_domain_size(solution, domains)
-    mini = min(free_squares, key=lambda x: x[1])[0]
-    return mini
-
-def _extract_free_squares_and_their_domain_size(solution, domains):
     line, col = solution.shape
-    free_squares = []
+    mini = ((0, 0), None)
     for l in range(line):
         for c in range(col):
             if solution[l, c] == DEFAULT_VALUE:
-                free_squares.append(((l, c), len(domains[l][c])))
-    return free_squares
+                if mini[1] is None or len(domains[l][c]) < mini[1]:
+                    mini = ((l, c), len(domains[l][c]))
+    if mini[1] is None:
+        raise ValueError('No next square')
+    return mini[0]
 
 def is_finished(solution, domains):
     try:

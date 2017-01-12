@@ -74,7 +74,7 @@ def GUI_solve(canvas, problem, FORWARD_CHECK, ARC_CONSISTENCY, SHOW_STEPS, FAST)
 
 def start_GUI(problem, **params):
     global square_size, button
-    square_size = 40
+    square_size = 30
 
     line, col = problem.shape
 
