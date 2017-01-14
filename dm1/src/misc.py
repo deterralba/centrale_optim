@@ -10,7 +10,7 @@ def console_print_solutions(solutions, start):
         )
     else:
         print('This problem has no solution\n')
-    print('\nSolving took {:.3f}s\n'.format(time()-start))
+    print('\nSolving took {:.4f}s\n'.format(time()-start))
     print('#'*60)
 
 def get_input():
