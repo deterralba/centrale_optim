@@ -1,0 +1,1 @@
+~/logiciel/scip/scip-3.2.1.linux.x86_64.gnu.opt.spx  -c "read shortestPath.zpl" -c optimize -c "display sols 0" -c quit  | ./visualize.py man.txt > visualize.js && xdg-open visualize.html
